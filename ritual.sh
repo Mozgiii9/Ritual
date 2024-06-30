@@ -110,6 +110,7 @@ EOF
   for container in hello-world deploy-fluentbit-1 deploy-redis-1; do
     docker restart $container
     check_error "Failed to restart $container"
+  done
 
   echo -e "${fmt}\nInstall Foundry${end}" | tee -a "$log_file"
   cd /root/
