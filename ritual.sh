@@ -122,7 +122,6 @@ EOF
 
   bash -i -c "source ~/.bashrc && foundryup"
   check_error "Failed to execute Foundry installation script"
-}
 
 # Функция настройки ноды
 node_tune() {
