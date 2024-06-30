@@ -90,18 +90,13 @@ EOF
   sudo systemctl start deploy-container
   check_error "Failed to start deploy-container service"
 
-  echo -e "${fmt}\nEditing config.json${end}" | tee -a "$log_file"
-  jq --arg rpc_url "$RPC_URL" '.chain.rpc_url = $rpc_url' /root/infernet-container-starter/deploy/config.json > temp_file.json && mv temp_file.json /root/infernet-container-starter/deploy/config.json
-  jq --arg private_key "$PRIVATE_KEY" '.chain.wallet.private_key = $private_key' /root/infernet-container-starter/deploy/config.json > temp_file.json && mv temp_file.json /root/infernet-container-starter/deploy/config.json
-
   echo -e "${fmt}\nSleep 60 seconds before checking docker containers${end}" | tee -a "$log_file"
   sleep 60
 
-  if docker ps -a | grep -q 'hello-world' && docker ps -a | grep -q 'deploy-redis-1' && docker ps -a | grep -q 'deploy-fluentbit-1'; then
+  if docker ps -a | grep -q 'deploy-redis-1' && docker ps -a | grep -q 'deploy-fluentbit-1'; then
     echo -e "${scss}\nContainers up correctly${end}" | tee -a "$log_file"
   else
-    echo -e "${err}\nContainers up incorrectly${end}" | tee -a "$log_file"
-    exit 1
+    echo -e "${err}\nContainers up incorrectly. Continue${end}" | tee -a "$log_file"
   fi
 
   echo -e "${fmt}\nEditing Makefile${end}" | tee -a "$log_file"
@@ -112,10 +107,9 @@ EOF
   sed -i 's/address coordinator = 0x5FbDB2315678afecb367f032d93F642f64180aa3;/address coordinator = 0x8D871Ef2826ac9001fB2e33fDD6379b6aaBF449c;/' /root/infernet-container-starter/projects/hello-world/contracts/script/Deploy.s.sol
 
   echo -e "${fmt}\nRestart docker containers to apply new config${end}" | tee -a "$log_file"
-  for container in anvil-node hello-world deploy-node-1 deploy-fluentbit-1 deploy-redis-1; do
+  for container in hello-world deploy-fluentbit-1 deploy-redis-1; do
     docker restart $container
     check_error "Failed to restart $container"
-  done
 
   echo -e "${fmt}\nInstall Foundry${end}" | tee -a "$log_file"
   cd /root/
