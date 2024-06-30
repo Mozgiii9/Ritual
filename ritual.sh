@@ -90,13 +90,18 @@ EOF
   sudo systemctl start deploy-container
   check_error "Failed to start deploy-container service"
 
+  echo -e "${fmt}\nEditing config.json${end}" | tee -a "$log_file"
+  jq --arg rpc_url "$RPC_URL" '.chain.rpc_url = $rpc_url' /root/infernet-container-starter/deploy/config.json > temp_file.json && mv temp_file.json /root/infernet-container-starter/deploy/config.json
+  jq --arg private_key "$PRIVATE_KEY" '.chain.wallet.private_key = $private_key' /root/infernet-container-starter/deploy/config.json > temp_file.json && mv temp_file.json /root/infernet-container-starter/deploy/config.json
+
   echo -e "${fmt}\nSleep 60 seconds before checking docker containers${end}" | tee -a "$log_file"
   sleep 60
 
-  if docker ps -a | grep -q 'anvil-node' && docker ps -a | grep -q 'hello-world' && docker ps -a | grep -q 'deploy-node-1' && docker ps -a | grep -q 'deploy-redis-1' && docker ps -a | grep -q 'deploy-fluentbit-1'; then
+  if docker ps -a | grep -q 'hello-world' && docker ps -a | grep -q 'deploy-redis-1' && docker ps -a | grep -q 'deploy-fluentbit-1'; then
     echo -e "${scss}\nContainers up correctly${end}" | tee -a "$log_file"
   else
-    echo -e "${err}\nContainers up incorrectly. Continue${end}" | tee -a "$log_file"
+    echo -e "${err}\nContainers up incorrectly${end}" | tee -a "$log_file"
+    exit 1
   fi
 
   echo -e "${fmt}\nEditing Makefile${end}" | tee -a "$log_file"
