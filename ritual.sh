@@ -38,17 +38,17 @@ check_error() {
 # Функция установки
 installation() {
   if [ -z "$RPC_URL" ]; then
-    echo -e "${err}\nYou have not set RPC URL, please set the variable and try again${end}" | tee -a "$log_file"
+    echo -e "${err}\nYou have not set RPC_URL, please set the variable and try again${end}" | tee -a "$log_file"
     exit 1
   fi
 
   if [ -z "$PRIVATE_KEY" ]; then
-    echo -e "${err}\nYou have not set Private Key${end}" | tee -a "$log_file"
+    echo -e "${err}\nYou have not set PRIVATE_KEY${end}" | tee -a "$log_file"
     exit 1
   fi
 
   if [[ "${PRIVATE_KEY:0:2}" != "0x" ]]; then
-    echo -e "${err}First 2 chars in Private Key variable is not 0x${end}" | tee -a "$log_file"
+    echo -e "${err}First 2 chars in PRIVATE_KEY variable is not 0x${end}" | tee -a "$log_file"
     exit 1
   fi
 
@@ -90,6 +90,10 @@ EOF
   sudo systemctl start deploy-container
   check_error "Failed to start deploy-container service"
 
+  echo -e "${fmt}\nEditing config.json${end}" | tee -a "$log_file"
+  jq --arg rpc_url "$RPC_URL" '.chain.rpc_url = $rpc_url' /root/infernet-container-starter/deploy/config.json > temp_file.json && mv temp_file.json /root/infernet-container-starter/deploy/config.json
+  jq --arg private_key "$PRIVATE_KEY" '.chain.wallet.private_key = $private_key' /root/infernet-container-starter/deploy/config.json > temp_file.json && mv temp_file.json /root/infernet-container-starter/deploy/config.json
+
   echo -e "${fmt}\nSleep 60 seconds before checking docker containers${end}" | tee -a "$log_file"
   sleep 60
 
@@ -100,19 +104,15 @@ EOF
     exit 1
   fi
 
-  echo -e "${fmt}\nEditing config.json${end}" | tee -a "$log_file"
-  jq --arg rpc_url "$RPC_URL" '.chain.rpc_url = $rpc_url' /root/infernet-container-starter/deploy/config.json > temp_file.json && mv temp_file.json /root/infernet-container-starter/deploy/config.json
-  jq --arg private_key "$PRIVATE_KEY" '.chain.wallet.private_key = $private_key' /root/infernet-container-starter/deploy/config.json > temp_file.json && mv temp_file.json /root/infernet-container-starter/deploy/config.json
-
   echo -e "${fmt}\nEditing Makefile${end}" | tee -a "$log_file"
   sed -i 's/sender := .*/sender := '"$PRIVATE_KEY"'/' /root/infernet-container-starter/projects/hello-world/contracts/Makefile
   sed -i 's|RPC_URL := .*|RPC_URL := '"$RPC_URL"'|' /root/infernet-container-starter/projects/hello-world/contracts/Makefile
 
   echo -e "${fmt}\nEditing Deploy.s.sol${end}" | tee -a "$log_file"
-  sed -i 's/registry address = 0x3B1554f346DFe5c482Bb4BA31b880c1C18412170;/registry address = 0x3B1554f346DFe5c482Bb4BA31b880c1C18412170;/' /root/infernet-container-starter/projects/hello-world/contracts/script/Deploy.s.sol
+  sed -i 's/address coordinator = 0x5FbDB2315678afecb367f032d93F642f64180aa3;/address coordinator = 0x8D871Ef2826ac9001fB2e33fDD6379b6aaBF449c;/' /root/infernet-container-starter/projects/hello-world/contracts/script/Deploy.s.sol
 
   echo -e "${fmt}\nRestart docker containers to apply new config${end}" | tee -a "$log_file"
-  for container in hello-world deploy-node-1 deploy-fluentbit-1 deploy-redis-1; do
+  for container in anvil-node hello-world deploy-node-1 deploy-fluentbit-1 deploy-redis-1; do
     docker restart $container
     check_error "Failed to restart $container"
   done
