@@ -122,8 +122,7 @@ EOF
   check_error "Не удалось скачать скрипт установки Foundry"
 
   # Исполнение foundryup без использования интерактивной оболочки
-  source ~/.bashrc
-  foundryup
+  bash -i -c "source ~/.bashrc && foundryup"
   check_error "Не удалось выполнить скрипт установки Foundry"
 }
 
