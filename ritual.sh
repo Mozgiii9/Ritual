@@ -121,8 +121,7 @@ EOF
   curl -L https://foundry.paradigm.xyz | bash
   check_error "Не удалось скачать скрипт установки Foundry"
 
-  # Исполнение foundryup без использования интерактивной оболочки
-  bash -i -c "source ~/.bashrc && foundryup"
+  ~/.foundry/bin/foundryup
   check_error "Не удалось выполнить скрипт установки Foundry"
 }
 
