@@ -107,6 +107,11 @@ EOF
   CONFIG_FILE=~/infernet-container-starter/projects/hello-world/container/config.json
   sed -i "9s|\"rpc_url\": \".*\"|\"rpc_url\": \"$RPC_URL\"|" $CONFIG_FILE
   sed -i "13s|\"private_key\": \".*\"|\"private_key\": \"$PRIVATE_KEY\"|" $CONFIG_FILE
+
+  CONFIG_FILE_2=~/infernet-container-starter/deploy/config.json
+  sed -i "9s|\"rpc_url\": \".*\"|\"rpc_url\": \"$RPC_URL\"|" $CONFIG_FILE_2
+  sed -i "13s|\"private_key\": \".*\"|\"private_key\": \"$PRIVATE_KEY\"|" $CONFIG_FILE_2
+  
   sed -i 's/sender := .*/sender := '"$PRIVATE_KEY"'/' /root/infernet-container-starter/projects/hello-world/contracts/Makefile
   sed -i 's|RPC_URL := .*|RPC_URL := '"$RPC_URL"'|' /root/infernet-container-starter/projects/hello-world/contracts/Makefile
 
