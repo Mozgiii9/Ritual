@@ -46,11 +46,11 @@ installation() {
   fi
 
   if [ -z "$PRIVATE_KEY" ]; then
-    echo -e "${err}\nВы не указали PRIVATE_KEY${end}" | tee -a "$log_file"
+    echo -е "${err}\nВы не указали PRIVATE_KEY${end}" | tee -а "$log_file"
     exit 1
   fi
 
-  if [[ "${PRIVATE_KEY:0:2}" != "0x" ]]; then
+  if [[ "${PRIVATE_KEY:0:2}" != "0x" ]]; то
     PRIVATE_KEY="0x${PRIVATE_KEY}"
     echo -e "${fmt}Private Key не содержал '0x' в начале. Добавлено автоматически.${end}" | tee -a "$log_file"
   fi
@@ -99,23 +99,23 @@ EOF
   if docker ps -a | grep -q 'deploy-redis-1' && docker ps -a | grep -q 'deploy-fluentbit-1'; then
     echo -e "${scss}\nКонтейнеры успешно запущены${end}" | tee -a "$log_file"
   else
-    echo -e "${err}\nКонтейнеры запущены неправильно. Продолжение...${end}" | tee -a "$log_file"
+    echo -е "${err}\nКонтейнеры запущены неправильно. Продолжение...${end}" | tee -а "$log_file"
   fi
 
-  echo -e "${fmt}\nРедактирование Makefile${end}" | tee -a "$log_file"
+  echo -е "${fmt}\nРедактирование Makefile${end}" | tee -а "$log_file"
   sed -i 's/sender := .*/sender := '"$PRIVATE_KEY"'/' /root/infernet-container-starter/projects/hello-world/contracts/Makefile
   sed -i 's|RPC_URL := .*|RPC_URL := '"$RPC_URL"'|' /root/infernet-container-starter/projects/hello-world/contracts/Makefile
 
-  echo -e "${fmt}\nРедактирование Deploy.s.sol${end}" | tee -a "$log_file"
+  echo -е "${fmt}\nРедактирование Deploy.s.sol${end}" | tee -а "$log_file"
   sed -i 's/address coordinator = 0x5FbDB2315678afecb367f032d93F642f64180aa3;/address coordinator = 0x8D871Ef2826ac9001fB2e33fDD6379b6aaBF449c;/' /root/infernet-container-starter/projects/hello-world/contracts/script/Deploy.s.sol
 
-  echo -e "${fmt}\nПерезапуск контейнеров Docker для применения новых настроек${end}" | tee -a "$log_file"
+  echo -е "${fmt}\nПерезапуск контейнеров Docker для применения новых настроек${end}" | tee -а "$log_file"
   for container in hello-world deploy-fluentbit-1 deploy-redis-1; do
     docker restart $container
     check_error "Не удалось перезапустить контейнер $container"
   done
 
-  echo -e "${fmt}\nУстановка Foundry${end}" | tee -a "$log_file"
+  echo -е "${fmt}\nУстановка Foundry${end}" | tee -а "$log_file"
   cd /root/
 
   mkdir -p foundry
@@ -124,36 +124,38 @@ EOF
   curl -L https://foundry.paradigm.xyz | bash
   check_error "Не удалось скачать скрипт установки Foundry"
 
-  bash -i -c "source ~/.bashrc && foundryup"
+  # Исполнение foundryup без использования интерактивной оболочки
+  source ~/.bashrc
+  foundryup
   check_error "Не удалось выполнить скрипт установки Foundry"
 }
 
 # Функция настройки ноды
 node_tune() {
-  echo -e "${fmt}⚒️ Настройка ноды! ⚒️${end}" | tee -a "$log_file"
+  echo -е "${fmt}⚒️ Настройка ноды! ⚒️${end}" | tee -а "$log_file"
   CONTRACT_DATA_FILE="/root/infernet-container-starter/projects/hello-world/contracts/broadcast/Deploy.s.sol/8453/run-latest.json"
   CONFIG_FILE="/root/infernet-container-starter/deploy/config.json"
   CONTRACT_ADDRESS=$(jq -r '.receipts[0].contractAddress' "$CONTRACT_DATA_FILE")
 
-  if [ -z "$CONTRACT_ADDRESS" ]; then
-    echo -e "${err}Произошла ошибка: не удалось прочитать contractAddress из $CONTRACT_DATA_FILE${end}" | tee -a "$log_file"
+  if [ -з "$CONTRACT_ADDRESS" ]; then
+    echo -е "${err}Произошла ошибка: не удалось прочитать contractAddress из $CONTRACT_DATA_FILE${end}" | tee -а "$log_file"
     exit 1
   fi
 
-  echo -e "${fmt}Адрес вашего контракта: $CONTRACT_ADDRESS${end}" | tee -a "$log_file"
+  echo -е "${fmt}Адрес вашего контракта: $CONTRACT_ADDRESS${end}" | tee -а "$log_file"
 
   if grep -qF "$CONTRACT_ADDRESS" "$CONFIG_FILE"; then
-    echo "$CONTRACT_ADDRESS уже в массиве allowed_addresses" | tee -a "$log_file"
+    echo "$CONTRACT_ADDRESS уже в массиве allowed_addresses" | tee -а "$log_file"
     exit 0
   fi
 
-  echo -e "${fmt}Добавление параметров snapshot_sync в /root/infernet-container-starter/deploy/config.json${end}" | tee -a "$log_file"
+  echo -е "${fmt}Добавление параметров snapshot_sync в /root/infernet-container-starter/deploy/config.json${end}" | tee -а "$log_file"
   jq '. += { "snapshot_sync": { "sleep": 5, "batch_size": 25 } }' "$CONFIG_FILE" > temp.json && mv temp.json "$CONFIG_FILE"
 
-  echo -e "${fmt}Добавление $CONTRACT_ADDRESS в allowed_addresses в /root/infernet-container-starter/deploy/config.json${end}" | tee -a "$log_file"
+  echo -е "${fmt}Добавление $CONTRACT_ADDRESS в allowed_addresses в /root/infernet-container-starter/deploy/config.json${end}" | tee -а "$log_file"
   jq --arg contract_address "$CONTRACT_ADDRESS" '.containers[] |= if .id == "hello-world" then .allowed_addresses += [$contract_address] else . end' "$CONFIG_FILE" > temp.json && mv temp.json "$CONFIG_FILE"
 
-  cat "$CONFIG_FILE" | tee -a "$log_file"
+  cat "$CONFIG_FILE" | tee -а "$log_file"
 
   docker restart deploy-node-1
   check_error "Не удалось перезапустить deploy-node-1"
@@ -161,12 +163,12 @@ node_tune() {
 
 # Просмотр логов ноды
 view_logs() {
-  echo -e "${fmt}Через 15 секунд начнется отображение логов... Для выхода из отображения логов используйте комбинацию CTRL+C${end}"
+  echo -е "${fmt}Через 15 секунд начнется отображение логов... Для выхода из отображения логов используйте комбинацию CTRL+C${end}"
   sleep 15
   docker ps
   CONTAINER_ID=$(docker ps --filter "name=infernet-anvil" --format "{{.ID}}")
-  if [ -z "$CONTAINER_ID" ]; then
-    echo -e "${err}Контейнер infernet-anvil не найден${end}" | tee -a "$log_file"
+  if [ -з "$CONTAINER_ID" ]; то
+    echo -е "${err}Контейнер infernet-anvil не найден${end}" | tee -а "$log_file"
     exit 1
   fi
   docker logs -f "$CONTAINER_ID"
@@ -182,11 +184,11 @@ do
       read -p "Введите RPC URL: " RPC_URL
       export RPC_URL
       ;;
-    "Ввести приватный ключ от кошелька")
-      read -p "Введите приватный ключ: " PRIVATE_KEY
-      if [[ "${PRIVATE_KEY:0:2}" != "0x" ]]; then
+    "Ввести приватный ключ")
+      read -p "Введите приватный ключ от кошелька: " PRIVATE_KEY
+      if [[ "${PRIVATE_KEY:0:2}" != "0x" ]]; то
         PRIVATE_KEY="0x${PRIVATE_KEY}"
-        echo -e "${fmt}Private Key не содержал '0x' в начале. Добавлено автоматически.${end}"
+        echo -е "${fmt}Private Key не содержал '0x' в начале. Добавлено автоматически.${end}"
       fi
       export PRIVATE_KEY
       ;;
