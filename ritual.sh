@@ -10,6 +10,9 @@ while true; do
   echo -e '██║ ╚████║╚██████╔╝██████╔╝███████╗██║  ██║╚██████╔╝██║ ╚████║██║ ╚████║███████╗██║  ██║'
   echo -e '╚═╝  ╚═══╝ ╚═════╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝'
   echo -e '\e[0m'
+
+  echo -e "\nПодписаться на канал may.crypto{🦅} чтобы быть в курсе самых актуальных нод - https://t.me/maycrypto\n"
+  
   sleep 2
   break
 done
@@ -99,20 +102,20 @@ EOF
     echo -e "${err}\nКонтейнеры запущены неправильно. Продолжение...${end}" | tee -a "$log_file"
   fi
 
-  echo -е "${fmt}\nРедактирование Makefile${end}" | tee -а "$log_file"
+  echo -e "${fmt}\nРедактирование Makefile${end}" | tee -a "$log_file"
   sed -i 's/sender := .*/sender := '"$PRIVATE_KEY"'/' /root/infernet-container-starter/projects/hello-world/contracts/Makefile
   sed -i 's|RPC_URL := .*|RPC_URL := '"$RPC_URL"'|' /root/infernet-container-starter/projects/hello-world/contracts/Makefile
 
   echo -e "${fmt}\nРедактирование Deploy.s.sol${end}" | tee -a "$log_file"
   sed -i 's/address coordinator = 0x5FbDB2315678afecb367f032d93F642f64180aa3;/address coordinator = 0x8D871Ef2826ac9001fB2e33fDD6379b6aaBF449c;/' /root/infernet-container-starter/projects/hello-world/contracts/script/Deploy.s.sol
 
-  echo -е "${fmt}\nПерезапуск контейнеров Docker для применения новых настроек${end}" | tee -a "$log_file"
+  echo -e "${fmt}\nПерезапуск контейнеров Docker для применения новых настроек${end}" | tee -a "$log_file"
   for container in hello-world deploy-fluentbit-1 deploy-redis-1; do
     docker restart $container
     check_error "Не удалось перезапустить контейнер $container"
   done
 
-  echo -е "${fmt}\nУстановка Foundry${end}" | tee -а "$log_file"
+  echo -e "${fmt}\nУстановка Foundry${end}" | tee -a "$log_file"
   cd /root/
 
   mkdir -p foundry
@@ -132,25 +135,25 @@ node_tune() {
   CONFIG_FILE="/root/infernet-container-starter/deploy/config.json"
   CONTRACT_ADDRESS=$(jq -r '.receipts[0].contractAddress' "$CONTRACT_DATA_FILE")
 
-  if [ -з "$CONTRACT_ADDRESS" ]; then
-    echo -е "${err}Произошла ошибка: не удалось прочитать contractAddress из $CONTRACT_DATA_FILE${end}" | tee -а "$log_file"
+  if [ -z "$CONTRACT_ADDRESS" ]; then
+    echo -e "${err}Произошла ошибка: не удалось прочитать contractAddress из $CONTRACT_DATA_FILE${end}" | tee -a "$log_file"
     exit 1
   fi
 
-  echo -е "${fmt}Адрес вашего контракта: $CONTRACT_ADDRESS${end}" | tee -а "$log_file"
+  echo -e "${fmt}Адрес вашего контракта: $CONTRACT_ADDRESS${end}" | tee -a "$log_file"
 
   if grep -qF "$CONTRACT_ADDRESS" "$CONFIG_FILE"; then
-    echo "$CONTRACT_ADDRESS уже в массиве allowed_addresses" | tee -а "$log_file"
+    echo "$CONTRACT_ADDRESS уже в массиве allowed_addresses" | tee -a "$log_file"
     exit 0
   fi
 
-  echo -е "${fmt}Добавление параметров snapshot_sync в /root/infernet-container-starter/deploy/config.json${end}" | tee -а "$log_file"
+  echo -e "${fmt}Добавление параметров snapshot_sync в /root/infernet-container-starter/deploy/config.json${end}" | tee -a "$log_file"
   jq '. += { "snapshot_sync": { "sleep": 5, "batch_size": 25 } }' "$CONFIG_FILE" > temp.json && mv temp.json "$CONFIG_FILE"
 
-  echo -е "${fmt}Добавление $CONTRACT_ADDRESS в allowed_addresses в /root/infernet-container-starter/deploy/config.json${end}" | tee -а "$log_file"
+  echo -e "${fmt}Добавление $CONTRACT_ADDRESS в allowed_addresses в /root/infernet-container-starter/deploy/config.json${end}" | tee -a "$log_file"
   jq --arg contract_address "$CONTRACT_ADDRESS" '.containers[] |= if .id == "hello-world" then .allowed_addresses += [$contract_address] else . end' "$CONFIG_FILE" > temp.json && mv temp.json "$CONFIG_FILE"
 
-  cat "$CONFIG_FILE" | tee -а "$log_file"
+  cat "$CONFIG_FILE" | tee -a "$log_file"
 
   docker restart deploy-node-1
   check_error "Не удалось перезапустить deploy-node-1"
