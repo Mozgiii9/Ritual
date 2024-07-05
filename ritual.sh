@@ -23,7 +23,7 @@ log_file="/var/log/script.log"
 
 # Проверка прав суперпользователя
 if [ "$EUID" -ne 0 ]; then
-  echo -e "${err}Please run as root${end}" | tee -a "$log_file"
+  echo -e "${err}Пожалуйста, запустите скрипт от имени root${end}" | tee -a "$log_file"
   exit 1
 fi
 
@@ -38,38 +38,38 @@ check_error() {
 # Функция установки
 installation() {
   if [ -z "$RPC_URL" ]; then
-    echo -e "${err}\nYou have not set RPC_URL, please set the variable and try again${end}" | tee -a "$log_file"
+    echo -e "${err}\nВы не указали RPC_URL, пожалуйста, задайте переменную и попробуйте снова${end}" | tee -a "$log_file"
     exit 1
   fi
 
   if [ -z "$PRIVATE_KEY" ]; then
-    echo -e "${err}\nYou have not set PRIVATE_KEY${end}" | tee -a "$log_file"
+    echo -e "${err}\nВы не указали PRIVATE_KEY${end}" | tee -a "$log_file"
     exit 1
   fi
 
   if [[ "${PRIVATE_KEY:0:2}" != "0x" ]]; then
-    echo -e "${err}First 2 chars in PRIVATE_KEY variable is not 0x${end}" | tee -a "$log_file"
-    exit 1
+    PRIVATE_KEY="0x${PRIVATE_KEY}"
+    echo -e "${fmt}Private Key не содержал '0x' в начале. Добавлено автоматически.${end}" | tee -a "$log_file"
   fi
 
-  echo -e "${fmt}\nSetting up dependencies${end}" | tee -a "$log_file"
+  echo -e "${fmt}\nНастройка зависимостей${end}" | tee -a "$log_file"
   sudo apt update && sudo apt upgrade -y
-  check_error "Failed to update and upgrade packages"
+  check_error "Не удалось обновить и обновить пакеты"
 
   sudo apt -qy install curl git jq lz4 build-essential make
-  check_error "Failed to install required packages"
+  check_error "Не удалось установить необходимые пакеты"
 
   if ! command -v docker &> /dev/null || ! command -v docker-compose &> /dev/null; then
     sudo wget https://raw.githubusercontent.com/fackNode/requirements/main/docker.sh -O /tmp/docker.sh
-    check_error "Failed to download Docker installation script"
+    check_error "Не удалось скачать скрипт установки Docker"
     chmod +x /tmp/docker.sh && /tmp/docker.sh
-    check_error "Failed to execute Docker installation script"
+    check_error "Не удалось выполнить скрипт установки Docker"
   fi
 
   git clone --recurse-submodules https://github.com/ritual-net/infernet-container-starter /root/infernet-container-starter
-  check_error "Failed to clone repository"
+  check_error "Не удалось клонировать репозиторий"
 
-  echo -e "${fmt}\nCreating deploy-container.service${end}" | tee -a "$log_file"
+  echo -e "${fmt}\nСоздание deploy-container.service${end}" | tee -a "$log_file"
 
   sudo tee /etc/systemd/system/deploy-container.service <<EOF
 [Unit]
@@ -88,94 +88,114 @@ EOF
   sudo systemctl daemon-reload
   sudo systemctl enable deploy-container
   sudo systemctl start deploy-container
-  check_error "Failed to start deploy-container service"
+  check_error "Не удалось запустить службу deploy-container"
 
-  echo -e "${fmt}\nSleep 60 seconds before checking docker containers${end}" | tee -a "$log_file"
+  echo -e "${fmt}\nОжидание 60 секунд перед проверкой контейнеров Docker${end}" | tee -a "$log_file"
   sleep 60
 
   if docker ps -a | grep -q 'deploy-redis-1' && docker ps -a | grep -q 'deploy-fluentbit-1'; then
-    echo -e "${scss}\nContainers up correctly${end}" | tee -a "$log_file"
+    echo -e "${scss}\nКонтейнеры успешно запущены${end}" | tee -a "$log_file"
   else
-    echo -e "${err}\nContainers up incorrectly. Continue${end}" | tee -a "$log_file"
+    echo -e "${err}\nКонтейнеры запущены неправильно. Продолжение...${end}" | tee -a "$log_file"
   fi
 
-  echo -e "${fmt}\nEditing Makefile${end}" | tee -a "$log_file"
+  echo -е "${fmt}\nРедактирование Makefile${end}" | tee -а "$log_file"
   sed -i 's/sender := .*/sender := '"$PRIVATE_KEY"'/' /root/infernet-container-starter/projects/hello-world/contracts/Makefile
   sed -i 's|RPC_URL := .*|RPC_URL := '"$RPC_URL"'|' /root/infernet-container-starter/projects/hello-world/contracts/Makefile
 
-  echo -e "${fmt}\nEditing Deploy.s.sol${end}" | tee -a "$log_file"
+  echo -e "${fmt}\nРедактирование Deploy.s.sol${end}" | tee -a "$log_file"
   sed -i 's/address coordinator = 0x5FbDB2315678afecb367f032d93F642f64180aa3;/address coordinator = 0x8D871Ef2826ac9001fB2e33fDD6379b6aaBF449c;/' /root/infernet-container-starter/projects/hello-world/contracts/script/Deploy.s.sol
 
-  echo -e "${fmt}\nRestart docker containers to apply new config${end}" | tee -a "$log_file"
+  echo -е "${fmt}\nПерезапуск контейнеров Docker для применения новых настроек${end}" | tee -a "$log_file"
   for container in hello-world deploy-fluentbit-1 deploy-redis-1; do
     docker restart $container
-    check_error "Failed to restart $container"
+    check_error "Не удалось перезапустить контейнер $container"
   done
 
-  echo -e "${fmt}\nInstall Foundry${end}" | tee -a "$log_file"
+  echo -е "${fmt}\nУстановка Foundry${end}" | tee -а "$log_file"
   cd /root/
 
   mkdir -p foundry
   cd foundry
 
   curl -L https://foundry.paradigm.xyz | bash
-  check_error "Failed to download Foundry installation script"
+  check_error "Не удалось скачать скрипт установки Foundry"
 
   bash -i -c "source ~/.bashrc && foundryup"
-  check_error "Failed to execute Foundry installation script"
+  check_error "Не удалось выполнить скрипт установки Foundry"
 }
 
 # Функция настройки ноды
 node_tune() {
-  echo -e "${fmt}⚒️ Tune the node! ⚒️${end}" | tee -a "$log_file"
+  echo -e "${fmt}⚒️ Настройка ноды! ⚒️${end}" | tee -a "$log_file"
   CONTRACT_DATA_FILE="/root/infernet-container-starter/projects/hello-world/contracts/broadcast/Deploy.s.sol/8453/run-latest.json"
   CONFIG_FILE="/root/infernet-container-starter/deploy/config.json"
   CONTRACT_ADDRESS=$(jq -r '.receipts[0].contractAddress' "$CONTRACT_DATA_FILE")
 
-  if [ -z "$CONTRACT_ADDRESS" ]; then
-    echo -e "${err}Error occurred cannot read contractAddress from $CONTRACT_DATA_FILE${end}" | tee -a "$log_file"
+  if [ -з "$CONTRACT_ADDRESS" ]; then
+    echo -е "${err}Произошла ошибка: не удалось прочитать contractAddress из $CONTRACT_DATA_FILE${end}" | tee -а "$log_file"
     exit 1
   fi
 
-  echo -e "${fmt}Your contract address: $CONTRACT_ADDRESS${end}" | tee -a "$log_file"
+  echo -е "${fmt}Адрес вашего контракта: $CONTRACT_ADDRESS${end}" | tee -а "$log_file"
 
   if grep -qF "$CONTRACT_ADDRESS" "$CONFIG_FILE"; then
-    echo "$CONTRACT_ADDRESS already in allowed_addresses array" | tee -a "$log_file"
+    echo "$CONTRACT_ADDRESS уже в массиве allowed_addresses" | tee -а "$log_file"
     exit 0
   fi
 
-  echo -e "${fmt}Adding snapshot_sync params to /root/infernet-container-starter/deploy/config.json${end}" | tee -a "$log_file"
+  echo -е "${fmt}Добавление параметров snapshot_sync в /root/infernet-container-starter/deploy/config.json${end}" | tee -а "$log_file"
   jq '. += { "snapshot_sync": { "sleep": 5, "batch_size": 25 } }' "$CONFIG_FILE" > temp.json && mv temp.json "$CONFIG_FILE"
 
-  echo -e "${fmt}Adding $CONTRACT_ADDRESS in allowed_addresses to /root/infernet-container-starter/deploy/config.json${end}" | tee -a "$log_file"
+  echo -е "${fmt}Добавление $CONTRACT_ADDRESS в allowed_addresses в /root/infernet-container-starter/deploy/config.json${end}" | tee -а "$log_file"
   jq --arg contract_address "$CONTRACT_ADDRESS" '.containers[] |= if .id == "hello-world" then .allowed_addresses += [$contract_address] else . end' "$CONFIG_FILE" > temp.json && mv temp.json "$CONFIG_FILE"
 
-  cat "$CONFIG_FILE" | tee -a "$log_file"
+  cat "$CONFIG_FILE" | tee -а "$log_file"
 
   docker restart deploy-node-1
-  check_error "Failed to restart deploy-node-1"
+  check_error "Не удалось перезапустить deploy-node-1"
+}
+
+# Просмотр логов ноды
+view_logs() {
+  echo -e "${fmt}Через 15 секунд начнется отображение логов... Для выхода из отображения логов используйте комбинацию CTRL+C${end}"
+  sleep 15
+  docker ps
+  CONTAINER_ID=$(docker ps --filter "name=infernet-anvil" --format "{{.ID}}")
+  if [ -z "$CONTAINER_ID" ]; then
+    echo -e "${err}Контейнер infernet-anvil не найден${end}" | tee -a "$log_file"
+    exit 1
+  fi
+  docker logs -f "$CONTAINER_ID"
 }
 
 # Меню
-PS3='Please enter your choice: '
-options=("Set RPC link" "Set private key" "Install" "Quit")
+PS3='Пожалуйста, выберите опцию: '
+options=("Установить RPC ссылку" "Установить приватный ключ" "Установить" "Просмотреть логи ноды Ritual" "Выйти")
 select opt in "${options[@]}"
 do
   case $opt in
-    "Set RPC link")
-      read -p "Enter RPC URL: " RPC_URL
+    "Установить RPC ссылку")
+      read -p "Введите RPC URL: " RPC_URL
       export RPC_URL
       ;;
-    "Set private key")
-      read -p "Enter Private Key: " PRIVATE_KEY
+    "Установить приватный ключ")
+      read -p "Введите приватный ключ: " PRIVATE_KEY
+      if [[ "${PRIVATE_KEY:0:2}" != "0x" ]]; then
+        PRIVATE_KEY="0x${PRIVATE_KEY}"
+        echo -e "${fmt}Private Key не содержал '0x' в начале. Добавлено автоматически.${end}"
+      fi
       export PRIVATE_KEY
       ;;
-    "Install")
+    "Установить")
       installation
       ;;
-    "Quit")
+    "Просмотреть логи ноды Ritual")
+      view_logs
+      ;;
+    "Выйти")
       break
       ;;
-    *) echo "Invalid option $REPLY";;
+    *) echo "Неверная опция $REPLY";;
   esac
 done
