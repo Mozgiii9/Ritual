@@ -182,7 +182,7 @@ do
       read -p "Введите RPC URL: " RPC_URL
       export RPC_URL
       ;;
-    "Ввести приватный ключ кошелька")
+    "Ввести приватный ключ от кошелька")
       read -p "Введите приватный ключ: " PRIVATE_KEY
       if [[ "${PRIVATE_KEY:0:2}" != "0x" ]]; then
         PRIVATE_KEY="0x${PRIVATE_KEY}"
