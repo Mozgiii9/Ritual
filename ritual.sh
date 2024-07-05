@@ -59,7 +59,7 @@ installation() {
   sudo apt -qy install curl git jq lz4 build-essential make
   check_error "Failed to install required packages"
 
-  if ! command -v docker &> /dev/null && ! command -v docker-compose &> /dev/null; then
+  if ! command -v docker &> /dev/null || ! command -v docker-compose &> /dev/null; then
     sudo wget https://raw.githubusercontent.com/fackNode/requirements/main/docker.sh -O /tmp/docker.sh
     check_error "Failed to download Docker installation script"
     chmod +x /tmp/docker.sh && /tmp/docker.sh
@@ -110,6 +110,7 @@ EOF
   for container in hello-world deploy-fluentbit-1 deploy-redis-1; do
     docker restart $container
     check_error "Failed to restart $container"
+  done
 
   echo -e "${fmt}\nInstall Foundry${end}" | tee -a "$log_file"
   cd /root/
@@ -122,6 +123,7 @@ EOF
 
   bash -i -c "source ~/.bashrc && foundryup"
   check_error "Failed to execute Foundry installation script"
+}
 
 # Функция настройки ноды
 node_tune() {
