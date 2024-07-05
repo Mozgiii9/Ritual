@@ -50,7 +50,7 @@ installation() {
     exit 1
   fi
 
-  if [[ "${PRIVATE_KEY:0:2}" != "0x" ]]; то
+  if [[ "${PRIVATE_KEY:0:2}" != "0x" ]]; then
     PRIVATE_KEY="0x${PRIVATE_KEY}"
     echo -e "${fmt}Private Key не содержал '0x' в начале. Добавлено автоматически.${end}" | tee -a "$log_file"
   fi
