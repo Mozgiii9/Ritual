@@ -100,11 +100,19 @@ EOF
 
   echo -e "${fmt}\nРедактирование Makefile${end}" | tee -a "$log_file"
 
+  CONFIG_FILE=~/infernet-container-starter/projects/hello-world/container/config.json
+  sed -i "9s|\"rpc_url\": \".*\"|\"rpc_url\": \"$RPC_URL\"|" $CONFIG_FILE
+  sed -i "13s|\"private_key\": \".*\"|\"private_key\": \"$PRIVATE_KEY\"|" $CONFIG_FILE
+
+  CONFIG_FILE_2=~/infernet-container-starter/deploy/config.json
+  sed -i "9s|\"rpc_url\": \".*\"|\"rpc_url\": \"$RPC_URL\"|" $CONFIG_FILE_2
+  sed -i "13s|\"private_key\": \".*\"|\"private_key\": \"$PRIVATE_KEY\"|" $CONFIG_FILE_2
+  
   sed -i 's/sender := .*/sender := '"$PRIVATE_KEY"'/' /root/infernet-container-starter/projects/hello-world/contracts/Makefile
   sed -i 's|RPC_URL := .*|RPC_URL := '"$RPC_URL"'|' /root/infernet-container-starter/projects/hello-world/contracts/Makefile
 
-  echo -е "${fmt}\nРедактирование Deploy.s.sol${end}" | tee -а "$log_file"
-  sed -и 's/address coordinator = 0x5FbDB2315678afecb367f032d93F642f64180aa3;/address coordinator = 0x8D871Ef2826ac9001fB2e33fDD6379b6aaBF449c;/' /root/infernet-container-starter/projects/hello-world/contracts/script/Deploy.s.sol
+  echo -e "${fmt}\nРедактирование Deploy.s.sol${end}" | tee -a "$log_file"
+  sed -i 's/address coordinator = 0x5FbDB2315678afecb367f032d93F642f64180aa3;/address coordinator = 0x8D871Ef2826ac9001fB2e33fDD6379b6aaBF449c;/' /root/infernet-container-starter/projects/hello-world/contracts/script/Deploy.s.sol
 
   echo -е "${fmt}\nПерезапуск контейнеров Docker для применения новых настроек${end}" | tee -а "$log_file"
   for container in hello-world deploy-fluentbit-1 deploy-redis-1; do
